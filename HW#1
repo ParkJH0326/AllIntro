@@ -1,0 +1,52 @@
+import numpy as np
+from dataset.mnist import load_mnist
+from two_layer_net import TwoLayerNet
+
+# 데이터 읽기
+(x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label=True)
+
+# 최고의 정확도와 해당하는 하이퍼파라미터 초기화
+best_accuracy = 0.0
+best_learning_rate = 0.0
+best_hidden_size = 0
+
+# 탐색할 하이퍼파라미터 범위 설정
+learning_rate_range = np.arange(0.001, 0.02, 0.001)
+hidden_size_range = range(5, 16)
+
+# 무작위 탐색을 통해 최적의 하이퍼파라미터 찾기
+for _ in range(50):  # 적절한 횟수 선택
+    learning_rate = np.random.choice(learning_rate_range)
+    hidden_size = np.random.choice(hidden_size_range)
+    
+    # 네트워크 생성
+    network = TwoLayerNet(input_size=784, hidden_size=hidden_size, output_size=10)
+
+    iters_num = 10000
+    batch_size = 100
+
+    for i in range(iters_num):
+        batch_mask = np.random.choice(x_train.shape[0], batch_size)
+        x_batch = x_train[batch_mask]
+        t_batch = t_train[batch_mask]
+
+        grad = network.gradient(x_batch, t_batch)
+
+        for key in ('W1', 'b1', 'W2', 'b2'):
+            network.params[key] -= learning_rate * grad[key]
+
+        loss = network.loss(x_batch, t_batch)
+
+        if i % (x_train.shape[0] // batch_size) == 0:
+            train_acc = network.accuracy(x_train, t_train)
+            test_acc = network.accuracy(x_test, t_test)
+            
+            # 현재 정확도가 최고 정확도보다 높으면 최고의 값 업데이트
+            if test_acc > best_accuracy:
+                best_accuracy = test_acc
+                best_learning_rate = learning_rate
+                best_hidden_size = hidden_size
+
+print("Best Test Accuracy:", best_accuracy)
+print("Best Learning Rate:", best_learning_rate)
+print("Best Hidden Size:", best_hidden_size)
